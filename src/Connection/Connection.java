@@ -1,7 +1,9 @@
 package Connection;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.*;
+import java.nio.charset.Charset;
 import java.util.Scanner;
 
 /**
@@ -15,6 +17,14 @@ public class Connection  implements Runnable
     public Connection(Socket socket, int connectionID)
     {
         m_socket = socket;
+        try
+        {
+            m_socket.setSoTimeout(300);
+        }
+        catch (SocketException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     public int getConnectionID()
@@ -27,8 +37,9 @@ public class Connection  implements Runnable
     {
         try
         {
-            Scanner wasd = new Scanner(m_socket.getInputStream());
-            System.out.println(wasd.nextLine());
+            byte[] readBuffer = new byte[1024];
+            InputStream in = m_socket.getInputStream();
+            in.read(readBuffer);
         }
         catch (IOException e)
         {
