@@ -1,18 +1,16 @@
 import Connection.Connection;
 import Connection.ServerSocket;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
 /**
  * Created by christian on 20.03.2016.
  */
 public class Main
 {
+    static long connectionID = 0;
+
     public static void main(String[] args)
     {
         int portNumber;
@@ -26,8 +24,6 @@ public class Main
         {
             portNumber = Integer.parseInt(args[0]);
         }
-
-
 
         ServerSocket server = null;
         try
@@ -48,7 +44,7 @@ public class Main
             {
                 Socket clientSocket = server.accept();
 
-                Thread th = new Thread(new Connection(clientSocket, 0));
+                Thread th = new Thread(new Connection(clientSocket, getNextConnectionID()));
                 th.start();
             }
             catch (IOException e)
@@ -58,5 +54,11 @@ public class Main
                 e.printStackTrace();
             }
         }
+    }
+
+    public static long getNextConnectionID()
+    {
+        connectionID++;
+        return connectionID;
     }
 }
