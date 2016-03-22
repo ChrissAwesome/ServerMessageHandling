@@ -9,7 +9,6 @@ import java.net.Socket;
  */
 public class Main
 {
-
     public static void main(String[] args)
     {
         int portNumber;
@@ -35,6 +34,9 @@ public class Main
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
+
+        //Start thread for the message handling
+
 
         //Accept multiple clients
         while (true)

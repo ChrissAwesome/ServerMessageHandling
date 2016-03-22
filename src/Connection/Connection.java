@@ -1,8 +1,13 @@
 package Connection;
 
+import MessageData.DataHandling;
+import MessageData.MessageCont;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by christian on 20.03.2016.
@@ -11,8 +16,8 @@ public class Connection  implements Runnable
 {
     private Socket m_socket;
 
-    private String m_from;
-    private String m_to;
+    private String m_from = null;
+    private String m_to = null;
     private boolean m_isUTF8Text = false;
     private boolean m_isSoundFile = false;
     private boolean m_isVideoFile = false;
@@ -42,58 +47,93 @@ public class Connection  implements Runnable
 
             //read from
             char[] fromBuffer = new char[31];
-            for (int i = 0; i < 64; i++)
+            for (int i = 0; i < 31; i++)
             {
                 if(readBuffer[i] != 0)
                 {
-                    fromBuffer[i] = (char)readBuffer[i];
+                    m_from += (char)readBuffer[i];
                 }
             }
-            m_from = String.copyValueOf(fromBuffer);
 
             //read to
-            char[] toBuffer = new char[31];
-            for (int i = 64; i < 129; i++)
+            for (int i = 32; i < 64; i++)
             {
                 if(readBuffer[i] != 0)
                 {
-                    toBuffer[i-64] = (char)readBuffer[i];
+                    m_to += (char)readBuffer[i];
                 }
             }
-            m_to = String.valueOf(toBuffer);
 
             //read isUTF8Text
-            if(readBuffer[129] == 1)
+            if(readBuffer[128] == 1)
             {
                 m_isUTF8Text = true;
             }
 
             //read isSoundFile
-            if(readBuffer[130] == 1)
+            if(readBuffer[129] == 1)
             {
                 m_isSoundFile = true;
             }
 
             //read isVideoFile
-            if(readBuffer[131] == 1)
+            if(readBuffer[130] == 1)
             {
                 m_isVideoFile = true;
             }
 
             //read flag
-            if(readBuffer[132] == 1)
+            if(readBuffer[131] == 1)
             {
                 m_isPictureFile = true;
             }
 
             //Data to send
-            for (int i = 133; i < readBuffer.length; i++)
+            int dataStart = 132;
+            byte[] dataBuffer = new byte[readBuffer.length-dataStart];
+            for (int i = dataStart; i < readBuffer.length; i++)
+            {
+                dataBuffer[i-dataStart] = readBuffer[i];
+            }
+
+            //If m_to is null, look for messages for m_from
+            if(m_to == null)
+            {
+                List<MessageCont> messages = DataHandling.messagePool.get(m_from);
+                if(messages != null && messages.size() != 0)
+                {
+                    for (int i = 0; i < messages.size(); i++)
+                    {
+                        //messages[i]; übertrage alle nachrichten
+                    }
+                }
+            }
+            //If the rest is filled, then save the message in the messagePool
+            else if(!m_from.isEmpty() && !m_to.isEmpty())
+            {
+                MessageCont messageCont = new MessageCont(m_from,m_isUTF8Text, m_isSoundFile, m_isVideoFile, m_isPictureFile, dataBuffer);
+                if(DataHandling.messagePool.get(m_to) != null)
+                {
+                    //Nachrichten schon vorhanden
+                    DataHandling.messagePool.get(m_to).add(messageCont);
+                }
+                else
+                {
+                    //Erste Nachricht
+                    List<MessageCont> content = new ArrayList<>();
+                    content.add(messageCont);
+                    DataHandling.messagePool.put(m_to, content);
+                }
+            }
+            else
             {
 
             }
         }
         catch (IOException e)
         {
+            System.out.println("Error in the Message-Handling");
+            System.out.println(e.getMessage());
             e.printStackTrace();
         }
     }
