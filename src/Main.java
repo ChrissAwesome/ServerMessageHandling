@@ -9,7 +9,6 @@ import java.net.Socket;
  */
 public class Main
 {
-    static long connectionID = 0;
 
     public static void main(String[] args)
     {
@@ -44,7 +43,7 @@ public class Main
             {
                 Socket clientSocket = server.accept();
 
-                Thread th = new Thread(new Connection(clientSocket, getNextConnectionID()));
+                Thread th = new Thread(new Connection(clientSocket));
                 th.start();
             }
             catch (IOException e)
@@ -54,11 +53,5 @@ public class Main
                 e.printStackTrace();
             }
         }
-    }
-
-    public static long getNextConnectionID()
-    {
-        connectionID++;
-        return connectionID;
     }
 }

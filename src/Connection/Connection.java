@@ -10,19 +10,17 @@ import java.net.*;
 public class Connection  implements Runnable
 {
     private Socket m_socket;
-    private long m_connectionID;
 
     private String m_from;
     private String m_to;
     private boolean m_isUTF8Text = false;
     private boolean m_isSoundFile = false;
     private boolean m_isVideoFile = false;
-    private boolean m_IsPictureFile = false;
+    private boolean m_isPictureFile = false;
 
-    public Connection(Socket socket, long connectionID)
+    public Connection(Socket socket)
     {
         m_socket = socket;
-        m_connectionID = connectionID;
         try
         {
             m_socket.setSoTimeout(300);
@@ -31,16 +29,6 @@ public class Connection  implements Runnable
         {
             e.printStackTrace();
         }
-    }
-
-    public long getConnectionID()
-    {
-        return m_connectionID;
-    }
-
-    public void setConnectionID(long id)
-    {
-        m_connectionID = id;
     }
 
     @Override
@@ -53,33 +41,40 @@ public class Connection  implements Runnable
             in.read(readBuffer);
 
             //read from
+            char[] fromBuffer = new char[31];
             for (int i = 0; i < 64; i++)
             {
                 if(readBuffer[i] != 0)
                 {
-                    m_from += (char)readBuffer[i];
+                    fromBuffer[i] = (char)readBuffer[i];
                 }
             }
+            m_from = String.copyValueOf(fromBuffer);
 
             //read to
+            char[] toBuffer = new char[31];
             for (int i = 64; i < 129; i++)
             {
-                m_to += (char)readBuffer[i];
+                if(readBuffer[i] != 0)
+                {
+                    toBuffer[i-64] = (char)readBuffer[i];
+                }
             }
+            m_to = String.valueOf(toBuffer);
 
-            //read flag
+            //read isUTF8Text
             if(readBuffer[129] == 1)
             {
                 m_isUTF8Text = true;
             }
 
-            //read flag
+            //read isSoundFile
             if(readBuffer[130] == 1)
             {
                 m_isSoundFile = true;
             }
 
-            //read flag
+            //read isVideoFile
             if(readBuffer[131] == 1)
             {
                 m_isVideoFile = true;
@@ -88,7 +83,7 @@ public class Connection  implements Runnable
             //read flag
             if(readBuffer[132] == 1)
             {
-                m_IsPictureFile = true;
+                m_isPictureFile = true;
             }
 
             //Data to send
