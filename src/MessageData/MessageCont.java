@@ -1,7 +1,5 @@
 package MessageData;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -9,27 +7,32 @@ import java.util.Date;
  */
 public class MessageCont
 {
-    private String m_from;
+    public String from;
+    public String to; //Message Owner
 
-    private boolean m_isUTF8Text = false;
-    private boolean m_isSoundFile = false;
-    private boolean m_isVideoFile = false;
-    private boolean m_isPictureFile = false;
+    public boolean isUTF8Text = false;
+    public boolean isSoundFile = false;
+    public boolean isVideoFile = false;
+    public boolean isPictureFile = false;
 
-    private byte[] m_data;
+    public byte[] data;
 
-    private Date messageDate = new Date();
+    public Date messageDate = new Date();
 
 
-    public MessageCont(String messageFrom, boolean isUTF8Text , boolean isSoundFile , boolean isVideoFile, boolean isPictureFile, byte[] data)
+    public boolean dataIsOnPlate = false;
+    public String dataPlatePath = "";
+
+    public MessageCont(String messageFrom, String messageTo, boolean isUTF8Text , boolean isSoundFile , boolean isVideoFile, boolean isPictureFile, byte[] data)
     {
-        m_from = messageFrom;
+        this.from = messageFrom;
+        this.to = messageTo;
 
-        m_isUTF8Text = isUTF8Text;
-        m_isSoundFile = isSoundFile;
-        m_isVideoFile = isVideoFile;
-        m_isPictureFile = isPictureFile;
+        this.isUTF8Text = isUTF8Text;
+        this.isSoundFile = isSoundFile;
+        this.isVideoFile = isVideoFile;
+        this.isPictureFile = isPictureFile;
 
-        m_data = data;
+       this.data = data;
     }
 }

@@ -1,5 +1,6 @@
 import Connection.Connection;
 import Connection.ServerSocket;
+import MessageData.DataHandling;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -36,7 +37,8 @@ public class Main
         }
 
         //Start thread for the message handling
-
+        Thread dataHandleThread = new Thread(new DataHandling());
+        dataHandleThread.start();
 
         //Accept multiple clients
         while (true)

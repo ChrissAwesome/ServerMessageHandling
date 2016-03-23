@@ -2,11 +2,15 @@ package Connection;
 
 import MessageData.DataHandling;
 import MessageData.MessageCont;
+import com.sun.deploy.util.ArrayUtil;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -14,6 +18,9 @@ import java.util.List;
  */
 public class Connection  implements Runnable
 {
+    public static int dataStart = 132;
+    public static int dataSize = 2048;
+
     private Socket m_socket;
 
     private String m_from = null;
@@ -41,7 +48,7 @@ public class Connection  implements Runnable
     {
         try
         {
-            byte[] readBuffer = new byte[1024];
+            byte[] readBuffer = new byte[dataSize];
             InputStream in = m_socket.getInputStream();
             in.read(readBuffer);
 
@@ -89,7 +96,6 @@ public class Connection  implements Runnable
             }
 
             //Data to send
-            int dataStart = 132;
             byte[] dataBuffer = new byte[readBuffer.length-dataStart];
             for (int i = dataStart; i < readBuffer.length; i++)
             {
@@ -99,19 +105,73 @@ public class Connection  implements Runnable
             //If m_to is null, look for messages for m_from
             if(m_to == null)
             {
+                List<MessageCont> messagesToSend = new ArrayList<>();
                 List<MessageCont> messages = DataHandling.messagePool.get(m_from);
                 if(messages != null && messages.size() != 0)
                 {
-                    for (int i = 0; i < messages.size(); i++)
+                    for (MessageCont message : messages)
                     {
-                        //messages[i]; übertrage alle nachrichten
+                        //send all messages to the client
+                        if(message.dataIsOnPlate == true)
+                        {
+                            //load the data from the hard disk
+                            message.data = DataHandling.getDataFromHardDisk(m_from, message.messageDate);
+                        }
+
+                        //Send the message
+                        OutputStream out = m_socket.getOutputStream();
+
+                        int nameLenghtsInByte = 32;
+                        //Add zeroes if needed to keep the length of 32 bytes per name
+                        byte[] fromInByte = new byte[nameLenghtsInByte];
+                        Arrays.fill(fromInByte, (byte) 0);
+                        fromInByte = concat(fromInByte, message.from.getBytes());
+                        out.write(fromInByte);
+
+                        byte[] toInByte = new byte[nameLenghtsInByte];
+                        Arrays.fill(fromInByte, (byte) 0);
+                        toInByte = concat(toInByte, message.to.getBytes());
+                        out.write(toInByte);
+                        if(message.isUTF8Text)
+                        {
+                            out.write((byte)1);
+                        }
+                        else
+                        {
+                            out.write((byte)0);
+                        }
+                        if(message.isSoundFile)
+                        {
+                            out.write((byte)1);
+                        }
+                        else
+                        {
+                            out.write((byte)0);
+                        }
+                        if(message.isVideoFile)
+                        {
+                            out.write((byte)1);
+                        }
+                        else
+                        {
+                            out.write((byte)0);
+                        }
+                        if(message.isPictureFile)
+                        {
+                            out.write((byte)1);
+                        }
+                        else
+                        {
+                            out.write((byte)0);
+                        }
+                        out.write(message.data);
                     }
                 }
             }
             //If the rest is filled, then save the message in the messagePool
             else if(!m_from.isEmpty() && !m_to.isEmpty())
             {
-                MessageCont messageCont = new MessageCont(m_from,m_isUTF8Text, m_isSoundFile, m_isVideoFile, m_isPictureFile, dataBuffer);
+                MessageCont messageCont = new MessageCont(m_from, m_to, m_isUTF8Text, m_isSoundFile, m_isVideoFile, m_isPictureFile, dataBuffer);
                 if(DataHandling.messagePool.get(m_to) != null)
                 {
                     //Nachrichten schon vorhanden
@@ -136,5 +196,20 @@ public class Connection  implements Runnable
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
+    }
+    public byte[] concat(byte[] a, byte[] b)
+    {
+        for (int i = 0; i < a.length; i++)
+        {
+            if(b.length > i)
+            {
+                a[i] = b[i];
+            }
+            else
+            {
+                a[i] = 0;
+            }
+        }
+        return a;
     }
 }
