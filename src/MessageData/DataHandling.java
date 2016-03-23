@@ -1,7 +1,6 @@
 package MessageData;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -10,7 +9,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import Connection.Connection;
-import com.sun.deploy.util.SystemUtils;
 
 
 /**
@@ -19,7 +17,7 @@ import com.sun.deploy.util.SystemUtils;
 public class DataHandling implements Runnable
 {
     public static String dataLocationPath = "C:\\Users\\christian\\Desktop\\Testdaten";
-    public static long cleanUpIntervall = 999999999;
+    public static long cleanUpIntervall = 1200000;
     private Date lastTimeWrittenOnPlate = new Date();
     private char seperator;
     private static DateFormat df = new SimpleDateFormat("MM_dd_yyyy_HH_mm_ss");
@@ -76,6 +74,23 @@ public class DataHandling implements Runnable
         file.delete();
 
         return data;
+    }
+
+    //Safe the messagePool as backup and for server shutdowns
+    public void saveMessagePoolOnDisk()
+    {
+        try
+        {
+            FileOutputStream fileOut = new FileOutputStream(dataLocationPath + "/MessagePool/messagePoolObject.obj");
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(messagePool);
+            out.close();
+            fileOut.close();
+        }
+        catch(IOException i)
+        {
+            i.printStackTrace();
+        }
     }
 
     @Override

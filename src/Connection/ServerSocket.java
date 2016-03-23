@@ -1,7 +1,6 @@
 package Connection;
 
 import java.io.IOException;
-import java.net.Socket;
 
 /**
  * Created by christian on 20.03.2016.

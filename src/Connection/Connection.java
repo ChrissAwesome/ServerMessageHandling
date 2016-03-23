@@ -2,9 +2,6 @@ package Connection;
 
 import MessageData.DataHandling;
 import MessageData.MessageCont;
-import com.sun.deploy.util.ArrayUtil;
-
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -167,6 +164,7 @@ public class Connection  implements Runnable
                         out.write(message.data);
                     }
                 }
+                DataHandling.messagePool.remove(m_from);
             }
             //If the rest is filled, then save the message in the messagePool
             else if(!m_from.isEmpty() && !m_to.isEmpty())
