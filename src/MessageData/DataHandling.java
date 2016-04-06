@@ -10,6 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import Connection.Connection;
 
+import static java.lang.System.load;
+import static java.lang.System.out;
+
 
 /**
  * Created by christian on 22.03.2016.
@@ -21,10 +24,28 @@ public class DataHandling implements Runnable
     private Date lastTimeWrittenOnPlate = new Date();
     private char seperator;
     private static DateFormat df = new SimpleDateFormat("MM_dd_yyyy_HH_mm_ss");
-
+    private static String messagePoolFilePath = dataLocationPath + "/MessagePool/messagePoolObject.obj";
 
     //Main memory for messages in the ram
     public static ConcurrentHashMap<String, List<MessageCont>> messagePool = new ConcurrentHashMap<>();
+
+
+    @Override
+    public void run()
+    {
+        try
+        {
+            if(loadMessagePoolFromDisk() != null)
+            {
+                messagePool = loadMessagePoolFromDisk();
+            }
+
+            checkForOldMessages();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
 
     private void checkForOldMessages() throws IOException {
         while (true)
@@ -35,10 +56,13 @@ public class DataHandling implements Runnable
                 {
                     if(message.messageDate.before(lastTimeWrittenOnPlate) && message.dataIsOnPlate == false)
                     {
-                        FileOutputStream out = new FileOutputStream(dataLocationPath + "/" + message.to + df.format(message.messageDate) + ".message", false);
-                        out.write(message.data);
-                        out.close();
-
+                        String fileToLookFor = dataLocationPath + "/" + message.to + df.format(message.messageDate) + ".message";
+                        if(new File(fileToLookFor).isFile())
+                        {
+                            FileOutputStream out = new FileOutputStream(fileToLookFor, false);
+                            out.write(message.data);
+                            out.close();
+                        }
                         message.data = null;
                         message.dataIsOnPlate = true;
                         message.dataPlatePath = dataLocationPath;
@@ -53,8 +77,8 @@ public class DataHandling implements Runnable
             }
             catch (InterruptedException e)
             {
-                System.out.println("Error while trying to clean up.:");
-                System.out.println(e.getMessage());
+                out.println("Error while trying to clean up.:");
+                out.println(e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -77,11 +101,11 @@ public class DataHandling implements Runnable
     }
 
     //Safe the messagePool as backup and for server shutdowns
-    public void saveMessagePoolOnDisk()
+    public static void saveMessagePoolOnDisk()
     {
         try
         {
-            FileOutputStream fileOut = new FileOutputStream(dataLocationPath + "/MessagePool/messagePoolObject.obj");
+            FileOutputStream fileOut = new FileOutputStream(messagePoolFilePath);
             ObjectOutputStream out = new ObjectOutputStream(fileOut);
             out.writeObject(messagePool);
             out.close();
@@ -93,16 +117,32 @@ public class DataHandling implements Runnable
         }
     }
 
-    @Override
-    public void run()
+    public static ConcurrentHashMap<String, List<MessageCont>> loadMessagePoolFromDisk()
     {
+        ConcurrentHashMap<String, List<MessageCont>> messagePoolToReturn = null;
         try
         {
-
-            checkForOldMessages();
-        } catch (IOException e)
+            if(new File(messagePoolFilePath).isFile())
+            {
+                FileInputStream fileIn = new FileInputStream(messagePoolFilePath);
+                ObjectInputStream in = new ObjectInputStream(fileIn);
+                messagePoolToReturn = (ConcurrentHashMap<String, List<MessageCont>>)in.readObject();
+                in.close();
+                fileIn.close();
+            }
+        }
+        catch (FileNotFoundException e)
         {
             e.printStackTrace();
         }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e)
+        {
+            e.printStackTrace();
+        }
+
+        return messagePoolToReturn;
     }
 }

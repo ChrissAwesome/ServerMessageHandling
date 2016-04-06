@@ -40,6 +40,10 @@ public class Main
         Thread dataHandleThread = new Thread(new DataHandling());
         dataHandleThread.start();
 
+        //Start thread for the server console
+        Thread serverConsoleThread = new Thread(new ServerConsole());
+        serverConsoleThread.start();
+
         //Accept multiple clients
         while (true)
         {
