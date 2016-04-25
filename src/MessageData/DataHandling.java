@@ -20,7 +20,7 @@ import static java.lang.System.out;
 public class DataHandling implements Runnable
 {
     public static String dataLocationPath = "C:\\Users\\christian\\Desktop\\Testdaten";
-    public static long cleanUpIntervall = 1200000;
+    public static long cleanUpIntervall = 30000;
     private Date lastTimeWrittenOnPlate = new Date();
     private char seperator;
     private static DateFormat df = new SimpleDateFormat("MM_dd_yyyy_HH_mm_ss");
@@ -35,13 +35,10 @@ public class DataHandling implements Runnable
     {
         try
         {
-            if(loadMessagePoolFromDisk() != null)
-            {
-                messagePool = loadMessagePoolFromDisk();
-            }
-
+            loadMessagePoolFromDisk();
             checkForOldMessages();
-        } catch (IOException e)
+        }
+        catch (IOException e)
         {
             e.printStackTrace();
         }
@@ -58,17 +55,17 @@ public class DataHandling implements Runnable
                     if(message.messageDate.before(lastTimeWrittenOnPlate) && message.dataIsOnPlate == false)
                     {
                         String fileToLookFor = dataLocationPath + "/" + message.to + df.format(message.messageDate) + ".message";
-                        if(new File(fileToLookFor).isFile())
+                        if(new File(fileToLookFor).isFile() == false)
                         {
                             FileOutputStream out = new FileOutputStream(fileToLookFor, false);
                             ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
                             objectOutputStream.writeObject(message.data);
                             out.close();
 
+                            message.data = null;
+                            message.dataIsOnPlate = true;
+                            message.dataPlatePath = dataLocationPath;
                         }
-                        message.data = null;
-                        message.dataIsOnPlate = true;
-                        message.dataPlatePath = dataLocationPath;
                     }
                 }
             }
@@ -121,7 +118,8 @@ public class DataHandling implements Runnable
         }
     }
 
-    public static ConcurrentHashMap<String, List<MessageCont>> loadMessagePoolFromDisk()
+
+    public static void loadMessagePoolFromDisk()
     {
         ConcurrentHashMap<String, List<MessageCont>> messagePoolToReturn = null;
         try
@@ -130,7 +128,7 @@ public class DataHandling implements Runnable
             {
                 FileInputStream fileIn = new FileInputStream(messagePoolFilePath);
                 ObjectInputStream in = new ObjectInputStream(fileIn);
-                messagePoolToReturn = (ConcurrentHashMap<String, List<MessageCont>>)in.readObject();
+                messagePool = (ConcurrentHashMap<String, List<MessageCont>>)in.readObject();
                 in.close();
                 fileIn.close();
             }
@@ -146,7 +144,5 @@ public class DataHandling implements Runnable
         {
             e.printStackTrace();
         }
-
-        return messagePoolToReturn;
     }
 }

@@ -29,6 +29,9 @@ public class ServerConsole implements Runnable
                 case "shutdown":
                     shutdownCommand();
                     break;
+                case "load messages":
+                    loadMessagesCommand();
+                    break;
                 default:
                     System.out.println("no command found");
             }
@@ -41,6 +44,7 @@ public class ServerConsole implements Runnable
         System.out.println("all commands:");
         System.out.println("stop //safe shutdown");
         System.out.println("shutdown //shutdown without saving");
+        System.out.println("load messages //load messages from disk");
     }
 
     private static void stopCommand()
@@ -53,5 +57,12 @@ public class ServerConsole implements Runnable
     private static void shutdownCommand()
     {
         System.exit(0);
+    }
+
+    private static void loadMessagesCommand()
+    {
+        System.out.println("load messages...");
+        DataHandling.loadMessagePoolFromDisk();
+        System.out.println("loading messages finished");
     }
 }

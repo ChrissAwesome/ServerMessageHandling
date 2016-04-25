@@ -101,19 +101,4 @@ public class Connection  implements Runnable
             e.printStackTrace();
         }
     }
-    public byte[] concat(byte[] a, byte[] b)
-    {
-        for (int i = 0; i < a.length; i++)
-        {
-            if(b.length > i)
-            {
-                a[i] = b[i];
-            }
-            else
-            {
-                a[i] = 0;
-            }
-        }
-        return a;
-    }
 }
