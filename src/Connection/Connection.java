@@ -2,9 +2,8 @@ package Connection;
 
 import MessageData.DataHandling;
 import MessageData.MessageCont;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+
+import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,17 +14,7 @@ import java.util.List;
  */
 public class Connection  implements Runnable
 {
-    public static int dataStart = 132;
-    public static int dataSize = 2048;
-
     private Socket m_socket;
-
-    private String m_from = null;
-    private String m_to = null;
-    private boolean m_isUTF8Text = false;
-    private boolean m_isSoundFile = false;
-    private boolean m_isVideoFile = false;
-    private boolean m_isPictureFile = false;
 
     public Connection(Socket socket)
     {
@@ -45,65 +34,14 @@ public class Connection  implements Runnable
     {
         try
         {
-            byte[] readBuffer = new byte[dataSize];
             InputStream in = m_socket.getInputStream();
-            in.read(readBuffer);
-
-            //read from
-            char[] fromBuffer = new char[31];
-            for (int i = 0; i < 31; i++)
-            {
-                if(readBuffer[i] != 0)
-                {
-                    m_from += (char)readBuffer[i];
-                }
-            }
-
-            //read to
-            for (int i = 32; i < 64; i++)
-            {
-                if(readBuffer[i] != 0)
-                {
-                    m_to += (char)readBuffer[i];
-                }
-            }
-
-            //read isUTF8Text
-            if(readBuffer[128] == 1)
-            {
-                m_isUTF8Text = true;
-            }
-
-            //read isSoundFile
-            if(readBuffer[129] == 1)
-            {
-                m_isSoundFile = true;
-            }
-
-            //read isVideoFile
-            if(readBuffer[130] == 1)
-            {
-                m_isVideoFile = true;
-            }
-
-            //read flag
-            if(readBuffer[131] == 1)
-            {
-                m_isPictureFile = true;
-            }
-
-            //Data to send
-            byte[] dataBuffer = new byte[readBuffer.length-dataStart];
-            for (int i = dataStart; i < readBuffer.length; i++)
-            {
-                dataBuffer[i-dataStart] = readBuffer[i];
-            }
+            ObjectInputStream oStream = new ObjectInputStream(in);
+            MessageCont messageContFromClient = (MessageCont) oStream.readObject();
 
             //If m_to is null, look for messages for m_from
-            if(m_to == null)
+            if(messageContFromClient.to == null)
             {
-                List<MessageCont> messagesToSend = new ArrayList<>();
-                List<MessageCont> messages = DataHandling.messagePool.get(m_from);
+                List<MessageCont> messages = DataHandling.messagePool.get(messageContFromClient.from);
                 if(messages != null && messages.size() != 0)
                 {
                     for (MessageCont message : messages)
@@ -112,75 +50,41 @@ public class Connection  implements Runnable
                         if(message.dataIsOnPlate == true)
                         {
                             //load the data from the hard disk
-                            message.data = DataHandling.getDataFromHardDisk(m_from, message.messageDate);
+                            message.data = DataHandling.getDataFromHardDisk(messageContFromClient.from, message.messageDate);
                         }
 
                         //Send the message
                         OutputStream out = m_socket.getOutputStream();
-
-                        int nameLenghtsInByte = 32;
-                        //Add zeroes if needed to keep the length of 32 bytes per name
-                        byte[] fromInByte = new byte[nameLenghtsInByte];
-                        Arrays.fill(fromInByte, (byte) 0);
-                        fromInByte = concat(fromInByte, message.from.getBytes());
-                        out.write(fromInByte);
-
-                        byte[] toInByte = new byte[nameLenghtsInByte];
-                        Arrays.fill(fromInByte, (byte) 0);
-                        toInByte = concat(toInByte, message.to.getBytes());
-                        out.write(toInByte);
-                        if(message.isUTF8Text)
-                        {
-                            out.write((byte)1);
-                        }
-                        else
-                        {
-                            out.write((byte)0);
-                        }
-                        if(message.isSoundFile)
-                        {
-                            out.write((byte)1);
-                        }
-                        else
-                        {
-                            out.write((byte)0);
-                        }
-                        if(message.isVideoFile)
-                        {
-                            out.write((byte)1);
-                        }
-                        else
-                        {
-                            out.write((byte)0);
-                        }
-                        if(message.isPictureFile)
-                        {
-                            out.write((byte)1);
-                        }
-                        else
-                        {
-                            out.write((byte)0);
-                        }
-                        out.write(message.data);
+                        ObjectOutputStream objectStreamToClient = new ObjectOutputStream(out);
+                        objectStreamToClient.writeObject(message);
+                        objectStreamToClient.close();
                     }
                 }
-                DataHandling.messagePool.remove(m_from);
+                else
+                {
+                    //Send empty message
+                    MessageCont message = new MessageCont("", messageContFromClient.from, true, true, true, true, "No Messages");
+                    OutputStream out = m_socket.getOutputStream();
+                    ObjectOutputStream objectStreamToClient = new ObjectOutputStream(out);
+                    objectStreamToClient.writeObject(message);
+                    objectStreamToClient.close();
+                }
+                DataHandling.messagePool.remove(messageContFromClient.from);
             }
             //If the rest is filled, then save the message in the messagePool
-            else if(!m_from.isEmpty() && !m_to.isEmpty())
+            else if(!messageContFromClient.from.isEmpty() && !messageContFromClient.to.isEmpty())
             {
-                MessageCont messageCont = new MessageCont(m_from, m_to, m_isUTF8Text, m_isSoundFile, m_isVideoFile, m_isPictureFile, dataBuffer);
-                if(DataHandling.messagePool.get(m_to) != null)
+                if(DataHandling.messagePool.get(messageContFromClient.to) != null)
                 {
                     //Nachrichten schon vorhanden
-                    DataHandling.messagePool.get(m_to).add(messageCont);
+                    DataHandling.messagePool.get(messageContFromClient.to).add(messageContFromClient);
                 }
                 else
                 {
                     //Erste Nachricht
                     List<MessageCont> content = new ArrayList<>();
-                    content.add(messageCont);
-                    DataHandling.messagePool.put(m_to, content);
+                    content.add(messageContFromClient);
+                    DataHandling.messagePool.put(messageContFromClient.to, content);
                 }
             }
             else
@@ -192,6 +96,8 @@ public class Connection  implements Runnable
         {
             System.out.println("Error in the Message-Handling");
             System.out.println(e.getMessage());
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
     }

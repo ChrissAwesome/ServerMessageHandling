@@ -50,7 +50,6 @@ public class Main
             try
             {
                 Socket clientSocket = server.accept();
-
                 Thread th = new Thread(new Connection(clientSocket));
                 th.start();
             }

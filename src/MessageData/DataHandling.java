@@ -47,7 +47,8 @@ public class DataHandling implements Runnable
         }
     }
 
-    private void checkForOldMessages() throws IOException {
+    private void checkForOldMessages() throws IOException
+    {
         while (true)
         {
             for(List<MessageCont> messages : messagePool.values())
@@ -60,8 +61,10 @@ public class DataHandling implements Runnable
                         if(new File(fileToLookFor).isFile())
                         {
                             FileOutputStream out = new FileOutputStream(fileToLookFor, false);
-                            out.write(message.data);
+                            ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
+                            objectOutputStream.writeObject(message.data);
                             out.close();
+
                         }
                         message.data = null;
                         message.dataIsOnPlate = true;
@@ -84,14 +87,15 @@ public class DataHandling implements Runnable
         }
     }
 
-    public static byte[] getDataFromHardDisk(String owner, Date messageDate) throws IOException
+    public static Object getDataFromHardDisk(String owner, Date messageDate) throws IOException, ClassNotFoundException
     {
         String pathToData = dataLocationPath + "/" + owner + df.format(messageDate) + ".message";
         List<MessageCont> messageToReturn = new ArrayList<>();
         FileInputStream reader = new FileInputStream(pathToData);
-        int curOffSet = 0;
-        byte[] data = new byte[Connection.dataStart];
-        reader.read(data);
+        ObjectInputStream objectReader = new ObjectInputStream(reader);
+        Object data = objectReader.readObject();
+        objectReader.close();
+        reader.close();
 
         //delete the file, because its not need anymore
         File file = new File(pathToData);
